@@ -1,0 +1,45 @@
+#!/bin/sh
+# example run of mpv
+# mpv http://u9.happyhardcore.com --input-ipc-server=`mpvctl create`
+
+basename=/tmp/mpvsocket
+
+create(){
+	n=0
+	while [[ -e $basename.$n ]] ; do
+		((n++))
+	done
+	filename=$basename.$n
+	printf '%s' "$filename"
+	printf 'created mpv socket at "%s"\n', "$filename" >&2
+}
+list_all(){
+	for f in $basename.* ; do
+		echo "found $f"
+		echo '{ "command": ["get_property", "filename"] }' | socat - $f | sed 's/.*"data":"//;s/",".*//'
+	done
+}
+pause_all(){
+	for f in $basename.* ; do
+		echo '{ "command": ["set_property", "pause", true] }' | socat - $f
+	done
+}
+stop_all(){
+	for f in $basename.* ; do
+		echo 'stop' | socat - $f
+	done
+}
+
+
+case "$1" in
+	create)
+		create;;
+	list_all)
+		list_all;;
+	pause_all)
+		pause_all;;
+	stop_all)
+		stop_all;;
+	*)
+	echo "Usage: $0 {create|list_all|pause_all|stop_all}"
+esac
