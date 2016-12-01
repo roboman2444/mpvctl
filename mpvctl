@@ -1,8 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 # example run of mpv
 # mpv http://u9.happyhardcore.com --input-ipc-server=`mpvctl create`
 
+
+##todo have it base off of list of files instead of int
+##basically to "increment" it will loop through /tmp/mpvsocket.* and choose the file after the one that is current
+##if the "current" one was removed, it will first insert it into that array and then look again
+
+##basically allows you to do non numeric things, like "/tmp/mpvsocket.rocknroll" and still have it work seamlessly if you want
+
+##increment and decrement should be looping, aka pacman
+
+##todo if it cant find a sock, what do?
+
+
+#if you want to "port" it to sh be my guest
+
 basename=/tmp/mpvsocket
+declare -i state_selection=0
 
 create(){
 	n=0
@@ -31,6 +46,28 @@ stop_all(){
 }
 
 
+
+
+select_number(){
+	state_selection=$1
+	printf 'state_selection %s\n' "$state_selection" > $basename
+}
+##todo make these actually look through the mpv streams playing
+select_increment(){
+	state_selection=$(cat $basename | sed 's/.*state_selection //')
+	select_number $(($state_selection+1))
+}
+select_decrement(){
+	state_selection=$(cat $basename | sed 's/.*state_selection //')
+	select_number $(($state_selection-1))
+}
+
+toggle_pause_selection(){
+	state_selection=$(cat $basename | sed 's/.*state_selection //')
+	filename=$basename.$state_selection
+	echo 'pause' | socat - $filename
+}
+
 case "$1" in
 	create)
 		create;;
@@ -40,6 +77,14 @@ case "$1" in
 		pause_all;;
 	stop_all)
 		stop_all;;
+	select_number)
+		select_number $2;;
+	select_increment)
+		select_increment;;
+	select_decrement)
+		select_decrement;;
+	toggle_pause_selection)
+		toggle_pause_selection;;
 	*)
-	echo "Usage: $0 {create|list_all|pause_all|stop_all}"
+	echo "Usage: $0 {create|list_all|pause_all|stop_all|select_number|select_increment|select_decrement|toggle_pause_selection}"
 esac
